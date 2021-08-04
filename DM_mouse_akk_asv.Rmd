@@ -1,0 +1,65 @@
+---
+title: "DM Akkermansia ASVs"
+author: "Katherine Mueller"
+date: "8/4/2021"
+output: html_document
+---
+
+#Load Libraries
+```{r}
+library(phyloseq)
+library(readr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+#Define Paths
+```{r}
+DM_mouse.rds <- "../../Data/Analysis/DM_mice.rds"
+out.dir <- "../../Data/Analysis"
+```
+
+Load and check phyloseq object
+```{r}
+DM_mouse.ps <- read_rds(DM_mouse.rds)
+print(DM_mouse.ps)
+```
+
+```{r}
+sample_variables(DM_mouse.ps)
+```
+
+#Relative Abundance
+```{r}
+rel.ps <- DM_mouse.ps %>%
+  transform_sample_counts(function(x) x/sum(x))
+```
+
+#Akkermansia ASV Identification
+```{r}
+akks.ps <- rel.ps %>%
+  subset_taxa(Genus == "Akkermansia")
+print(akks.ps)
+```
+
+#Filter for Akk ASVs at a mean abundance of at least 0.01%
+```{r}
+mean_cutoff = 0.0001
+mean_test = function(x) {
+  mean(x) >= mean_cutoff
+}
+
+akks.0001mean.ps <- akks.ps %>%
+  filter_taxa(mean_test, prune = TRUE)
+print(akks.0001mean.ps)
+```
+
+```{r}
+akks0001 <- akks.0001mean.ps %>%
+  otu_table() %>%
+  as.data.frame()
+colnames(akks0001)
+```
+
+There is only one akkermansia ASV.

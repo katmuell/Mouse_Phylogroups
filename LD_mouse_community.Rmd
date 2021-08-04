@@ -1,0 +1,101 @@
+---
+title: "LD Community"
+author: "Katherine Mueller"
+date: "8/4/2021"
+output: html_document
+---
+
+#Load Libraries
+```{r}
+library(phyloseq)
+library(readr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(RColorBrewer)
+```
+
+#Define Paths
+```{r}
+LD_mouse.rds <- "../../Data/Analysis/LD_mice.rds"
+out.dir <- "../../Data/Analysis"
+```
+
+Load and check phyloseq object
+```{r}
+LD_mouse.ps <- read_rds(LD_mouse.rds)
+print(DM_mouse.ps)
+```
+
+```{r}
+sample_variables(LD_mouse.ps)
+```
+
+#Relative Abundance
+```{r}
+rel.ps <- LD_mouse.ps %>%
+  transform_sample_counts(function(x) x/sum(x))
+```
+
+#Abundance Plots
+```{r}
+AbundancePlot = function (ps, tax_level) {
+  ps %>%
+    plot_bar(fill = tax_level) +
+    labs(y = "Relative Abundance") +
+    geom_bar(aes_string(color = tax_level, fill = tax_level),
+             stat = "identity",
+             position = "stack")
+}
+```
+
+```{r}
+AbundancePlot(rel.ps, "Genus")
+```
+
+#Black Akk
+```{r}
+getPalette = colorRampPalette(brewer.pal(9, "Set1"))
+```
+
+```{r}
+genus.list <- unique(tax_table(rel.ps)[,"Genus"])
+genus.palette <- getPalette(length(genus.list))
+names(genus.palette) <- genus.list
+
+genus.palette[[8]] = "#000000"
+```
+
+```{r}
+rel.df <- psmelt(rel.ps)
+
+black_akk_plot <- ggplot(rel.df, aes(x = Mouse, Abundance, factor(Genus), fill = factor(Genus))) +
+  geom_bar(stat = "identity", position = "stack") +
+  scale_fill_manual(values = genus.palette) +
+  labs(fill = "Genus")
+
+black_akk_plot
+```
+
+#Pruning
+Prune to top 20 genera
+```{r}
+rel.ps %>%
+  taxa_sums %>%
+  sort(decreasing = TRUE) %>%
+  names %>%
+  head(20) ->
+  top20
+
+rel.ps %>%
+  transform_sample_counts(function(x) x/sum(x)) %>%
+  prune_taxa(top20, .) ->
+  prune20.rel
+
+prune20.rel
+```
+
+```{r}
+prune20.rel %>% AbundancePlot("Genus")
+```
+
