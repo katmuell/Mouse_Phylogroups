@@ -12,6 +12,7 @@ library(readr)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(RColorBrewer)
 ```
 
 #Define Paths
@@ -39,7 +40,7 @@ rel.ps <- DM_mouse.ps %>%
 #Abundance Plots
 ```{r}
 AbundancePlot = function (ps, tax_level) {
-  rel.ps %>%
+  ps %>%
     plot_bar(fill = tax_level) +
     labs(y = "Relative Abundance") +
     geom_bar(aes_string(color = tax_level, fill = tax_level),
@@ -52,3 +53,48 @@ AbundancePlot = function (ps, tax_level) {
 AbundancePlot(rel.ps, "Genus")
 ```
 
+#Black Akk
+```{r}
+getPalette = colorRampPalette(brewer.pal(9, "Set1"))
+```
+
+```{r}
+genus.list <- unique(tax_table(rel.ps)[,"Genus"])
+genus.palette <- getPalette(length(genus.list))
+names(genus.palette) <- genus.list
+
+genus.palette[[6]] = "#000000"
+```
+
+```{r}
+rel.df <- psmelt(rel.ps)
+
+black_akk_plot <- ggplot(rel.df, aes(x = Mouse, Abundance, factor(Genus), fill = factor(Genus))) +
+  geom_bar(stat = "identity", position = "stack") +
+  scale_fill_manual(values = genus.palette) +
+  labs(fill = "Genus")
+
+black_akk_plot
+```
+
+#Pruning
+Prune to top 20 genera
+```{r}
+rel.ps %>%
+  taxa_sums %>%
+  sort(decreasing = TRUE) %>%
+  names %>%
+  head(20) ->
+  top20
+
+rel.ps %>%
+  transform_sample_counts(function(x) x/sum(x)) %>%
+  prune_taxa(top20, .) ->
+  prune20.rel
+
+prune20.rel
+```
+
+```{r}
+prune20.rel %>% AbundancePlot("Genus")
+```
