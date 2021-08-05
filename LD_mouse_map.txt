@@ -1,0 +1,9 @@
+#SampleID	Mouse	Group
+A10_S24	A10	Akk-Colonized
+C8_S23	C8	Akk-Colonized
+D10_S25	D10	Akk-Colonized
+D9_S26	D9	Akk-Free
+E8_S28	E8	Akk-Free
+F8_S27	F8	Akk-Free
+MUC4_S29	MUC4	Muc2
+MUC6_S30	MUC6	Muc2
