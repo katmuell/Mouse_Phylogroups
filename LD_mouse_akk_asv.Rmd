@@ -82,4 +82,4 @@ akks.boxplot <- akks.long %>%
 akks.boxplot
 ```
 
-It looks like taking more than the initial two wouldn't contribute to anything.
+It looks like taking more than the initial two wouldn't contribute to anything.Both of them are AmI.
