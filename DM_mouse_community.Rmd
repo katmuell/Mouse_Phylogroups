@@ -13,6 +13,7 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(RColorBrewer)
+library(microbiomeMarker)
 ```
 
 #Define Paths
@@ -98,3 +99,18 @@ prune20.rel
 ```{r}
 prune20.rel %>% AbundancePlot("Genus")
 ```
+
+#LEfSe
+```{r}
+genus.ps <- rel.ps %>%
+  tax_glom(taxrank = "Genus")
+
+lef <- lefse(genus.ps,
+             class = "AkkStrain",
+             multicls_strat = TRUE)
+```
+
+```{r}
+plot_ef_bar(lef)
+```
+
