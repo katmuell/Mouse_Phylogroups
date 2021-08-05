@@ -99,3 +99,13 @@ prune20.rel
 prune20.rel %>% AbundancePlot("Genus")
 ```
 
+#LEfSe
+```{r}
+genus.ps <- rel.ps %>%
+  tax_glom(taxrank = "Genus")
+
+lef <- lefse(genus.ps,
+             class = "Group",
+             multicls_strat = TRUE)
+```
+Not enough samples in each group to run LEfSe, I think.
