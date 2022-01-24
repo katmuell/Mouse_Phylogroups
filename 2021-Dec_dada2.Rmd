@@ -15,6 +15,7 @@ library(stringr)
 library(magrittr)
 library(ggplot2)
 library(phyloseq)
+library(tidyr)
 ```
 
 #Setup
@@ -84,7 +85,7 @@ filtRs <- file.path(filt_path, paste0(sample.names, "_R_filt.fastq.gz"))
 
 Filter reads
 ```{r}
-filt.out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, trimLeft = 10, truncLen = c(,),
+filt.out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, trimLeft = 10, truncLen = c(245,190),
                           maxN = 0, maxEE = c(2,2), truncQ = 2, rm.phix = TRUE,
                           compress = TRUE, multithread = TRUE)
 ```
@@ -142,7 +143,7 @@ table(nchar(getSequences(seqtab)))
 ```
 
 ```{r}
-seqtab2 <- seqtab[, nchar(colnames(seqtab)) %in% seq(,)]
+seqtab2 <- seqtab[, nchar(colnames(seqtab)) %in% seq(210,280)]
 ```
 
 Remove chimeras
@@ -152,7 +153,7 @@ dim(seqtab.nochim)
 ```
 
 ```{r}
-sum(seqtaseqtab.nochim)/sum(seqtab2)
+sum(seqtab.nochim)/sum(seqtab2)
 ```
 
 Track reads through the pipeline
