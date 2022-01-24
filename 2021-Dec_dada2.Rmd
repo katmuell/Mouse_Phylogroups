@@ -1,0 +1,39 @@
+---
+title: "2021-Dec"
+output: html_document
+---
+
+#Load Libraries
+```{r}
+library(readr)
+library(fs)
+library(dplyr)
+library(tibble)
+library(Biostrings)
+library(dada2)
+library(stringr)
+library(magrittr)
+library(ggplot2)
+library(phyloseq)
+```
+
+#Setup
+```{r}
+#Directories
+data.dir = "/work/kdm65"
+demux.dir = "/work/kdm65/16S_Dec_2021"
+output.dir = "/work/kdm65/scratch"
+```
+
+```{r}
+if (dir_exists(output.dir)) {
+  dir_delete(output.dir)
+}
+dir_create(output.dir)
+```
+
+```{r}
+#Files
+map.file = file.path(data.dir, "16S_metadata.txt")
+```
+
