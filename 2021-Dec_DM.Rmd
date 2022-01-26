@@ -122,6 +122,69 @@ AbundancePlot.Day(pruned.gavaged.ps, "Genus") +
   theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
 ```
 
+Trying out a colorblind friendly plotting package
+```{r}
+library(microshades)
+library(speedyseq)
+library(cowplot)
+```
+
+```{r}
+#melt to dataframes
+mdf.akk_free <- prep_mdf(pruned.akk_free.ps)
+mdf.gavaged <- prep_mdf(pruned.gavaged.ps)
+
+#generate color objects
+color_objs.akk_free <- create_color_dfs(mdf.akk_free,
+                                        selected_groups = c("Actinobacteriota", "Bacteroidota", "Firmicutes"),
+                                        cvd = TRUE)
+color_objs.akk_free <- reorder_samples_by(color_objs.akk_free$mdf, color_objs.akk_free$cdf)
+
+color_objs.gavaged <- create_color_dfs(mdf.gavaged,
+                                        selected_groups = c("Actinobacteriota", "Bacteroidota", "Firmicutes"),
+                                        cvd = TRUE)
+color_objs.gavaged <- reorder_samples_by(color_objs.gavaged$mdf, color_objs.gavaged$cdf)
+
+#Extract
+mdf.akk_free <- color_objs.akk_free$mdf
+cdf.akk_free <- color_objs.akk_free$cdf
+
+mdf.gavaged <- color_objs.gavaged$mdf
+cdf.gavaged <- color_objs.gavaged$cdf
+```
+
+```{r}
+akk_free.legend <- custom_legend(mdf.akk_free, cdf.akk_free, legend_text_size = 15)
+
+akk_free.plot <- plot_microshades(mdf.akk_free, cdf.akk_free, x = "SampleName") +
+  scale_y_continuous(labels = scales::percent, expand = expansion(0)) +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(size = 8)) +
+  facet_wrap(~Group, scales = "free_x") +
+  theme(strip.text.x = element_text(size = 8))
+
+plot_grid(akk_free.plot, akk_free.legend, rel_widths = c(1, .25))
+```
+
+```{r}
+gavaged.legend <- custom_legend(mdf.gavaged, cdf.gavaged, legend_text_size = 15)
+
+gavaged.plot <- plot_microshades(mdf.gavaged, cdf.gavaged, x = "Day") +
+  scale_y_continuous(labels = scales::percent, expand = expansion(0)) +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(size = 8)) +
+  scale_x_discrete(limits=c(3, 7, 14, 21, 28)) +
+  facet_wrap(~Group, scales = "free_x") +
+  theme(strip.text.x = element_text(size = 8))
+
+plot_grid(gavaged.plot, gavaged.legend, rel_widths = c(1, .25))
+```
+
+#LEfSe
+```{r}
+
+```
+
 #Akkermansia
 ```{r}
 akks.ps <- rel.ps %>%
