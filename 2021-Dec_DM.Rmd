@@ -49,7 +49,7 @@ rel.ps <- just.dustin.ps %>%
 
 #Abundance Plots
 ```{r}
-AbundancePlot = function(ps, tax_level) {
+AbundancePlot.SampleName = function(ps, tax_level) {
   ps %>%
     plot_bar(fill = tax_level, x = "SampleName") +
     labs(y = "Relative Abundance") +
@@ -57,13 +57,39 @@ AbundancePlot = function(ps, tax_level) {
              stat = "identity",
              position = "stack")
 }
+
+AbundancePlot.Day = function(ps, tax_level) {
+  ps %>%
+    plot_bar(fill = tax_level, x = "Day") +
+    labs(y = "Relative Abundance") +
+    geom_bar(aes_string(color = tax_level, fill = tax_level),
+             stat = "identity",
+             position = "stack")
+}
+```
+
+Since there are two day 0 Akk_free samples, faceting by day combines those two samples with a summed relative abundance of 2.0, so I will plot the Akk_free separate from the other groups.
+
+```{r}
+akk_free.ps <- rel.ps %>%
+  subset_samples(Group == "Akk_free")
+
+AbundancePlot.SampleName(akk_free.ps, "Phylum") +
+  facet_grid(~Group, scale="free_x", space="free_x")
 ```
 
 ```{r}
-AbundancePlot(rel.ps, "Phylum")
+gavaged.ps <- rel.ps %>%
+  subset_samples(Group != "Akk_free")
+
+AbundancePlot.Day(gavaged.ps, "Phylum") +
+  facet_grid(~Group~Day, , scale="free_x", space="free_x") +
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
 ```
 
-#Pruing
+It looks like there might be something going on with the actinobacteriota. They're present in the pre-gavage akk free samples and the later PBS samples but are much less prevalent in samples of mice gavaged with akkermansia.
+
+#Pruning
 Prune to the top 20 genera
 ```{r}
 rel.ps %>%
@@ -80,17 +106,29 @@ prune20.rel
 ```
 
 ```{r}
-AbundancePlot(prune20.rel, "Genus")
+pruned.akk_free.ps <- prune20.rel %>%
+  subset_samples(Group == "Akk_free")
+
+AbundancePlot.SampleName(pruned.akk_free.ps, "Genus") +
+  facet_grid(~Group, scale="free_x", space="free_x")
 ```
 
 ```{r}
-AbundancePlot(rel.ps, "Phylum")
+pruned.gavaged.ps <- prune20.rel %>%
+  subset_samples(Group != "Akk_free")
+
+AbundancePlot.Day(pruned.gavaged.ps, "Genus") +
+  facet_grid(~Group~Day, , scale="free_x", space="free_x") +
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
 ```
 
-Akkermansia
+
+
+#Akkermansia
 ```{r}
 akks.ps <- rel.ps %>%
-  subset_taxa(Genus == "Akkermansia")
+  subset_taxa(Genus == "Akkermansia") %>%
+  tax_glom(taxrank = "Genus")
 print(akks.ps)
 ```
 
