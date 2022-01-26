@@ -1,0 +1,115 @@
+---
+title: "Dustin's Analysis"
+output: html_document
+---
+
+#Load Libraries
+```{r}
+library(phyloseq)
+library(readr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(RColorBrewer)
+```
+
+#Define Paths
+```{r}
+rds <- "/work/kdm65/2021-Dec.rds"
+```
+
+Load and check phyloseq object
+```{r}
+all_mice.ps <- readRDS(rds)
+print(all_mice.ps)
+```
+
+```{r}
+sample_variables(all_mice.ps)
+```
+
+Subset for just Dustin's mice and remove bad samples
+```{r}
+just.dustin.ps <- all_mice.ps %>%
+  subset_samples(Owner == "Dustin") %>%
+  subset_samples(!SampleName %in% c("2086-Day7","PBS-Day14"))
+just.dustin.ps
+```
+
+```{r}
+plot_bar(just.dustin.ps)
+```
+None of these samples stand out as having super low read counts, so I don't need to prune any out.
+
+#Relative Abundance
+```{r}
+rel.ps <- just.dustin.ps %>%
+  transform_sample_counts(function(x) x/sum(x))
+```
+
+#Abundance Plots
+```{r}
+AbundancePlot = function(ps, tax_level) {
+  ps %>%
+    plot_bar(fill = tax_level, x = "SampleName") +
+    labs(y = "Relative Abundance") +
+    geom_bar(aes_string(color = tax_level, fill = tax_level),
+             stat = "identity",
+             position = "stack")
+}
+```
+
+```{r}
+AbundancePlot(rel.ps, "Phylum")
+```
+
+#Pruing
+Prune to the top 20 genera
+```{r}
+rel.ps %>%
+  taxa_sums %>%
+  sort(decreasing = TRUE) %>%
+  names %>%
+  head(20) ->
+  top20
+
+rel.ps %>%
+  prune_taxa(top20, .) ->
+  prune20.rel
+prune20.rel
+```
+
+```{r}
+AbundancePlot(prune20.rel, "Genus")
+```
+
+```{r}
+AbundancePlot(rel.ps, "Phylum")
+```
+
+Akkermansia
+```{r}
+akks.ps <- rel.ps %>%
+  subset_taxa(Genus == "Akkermansia")
+print(akks.ps)
+```
+
+```{r}
+akks <- akks.ps %>%
+  otu_table() %>%
+  as.data.frame()
+```
+
+Beta
+```{r}
+even.ps <- transform_sample_counts(just.dustin.ps, function(x) 1E6 * x/sum(x))
+```
+
+```{r}
+even.nmds_bs <- ordinate(even.ps, "NMDS", "bray")
+```
+
+```{r}
+plot_ordination(even.ps, even.nmds_bs, type = "samples", color = "Day", shape = "Group")
+```
+
