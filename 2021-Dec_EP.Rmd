@@ -153,6 +153,31 @@ mdf.male <- color_objs.male$mdf
 cdf.male <- color_objs.male$cdf
 ```
 
+Pruning bad?
+```{r}
+#melt to dataframes
+mdf.female <- prep_mdf(females.ps)
+mdf.male <- prep_mdf(males.ps)
+
+#generate color objects
+color_objs.female <- create_color_dfs(mdf.female,
+                                        selected_groups = c("Actinobacteriota","Bacteroidota", "Desulfobacterota", "Firmicutes", "Verrucomicrobiota"),
+                                        cvd = TRUE)
+color_objs.female <- reorder_samples_by(color_objs.female$mdf, color_objs.female$cdf)
+
+color_objs.male <- create_color_dfs(mdf.male,
+                                        selected_groups = c("Actinobacteriota","Bacteroidota", "Firmicutes", "Verrucomicrobiota"),
+                                        cvd = TRUE)
+color_objs.male <- reorder_samples_by(color_objs.male$mdf, color_objs.male$cdf)
+
+#Extract
+mdf.female <- color_objs.female$mdf
+cdf.female <- color_objs.female$cdf
+
+mdf.male <- color_objs.male$mdf
+cdf.male <- color_objs.male$cdf
+```
+
 ```{r}
 cb.female.legend <- custom_legend(mdf.female, cdf.female, legend_text_size = 15)
 
@@ -162,7 +187,8 @@ cb.female.plot <- plot_microshades(mdf.female, cdf.female, x = "Age") +
   theme(axis.text.x = element_text(size = 8)) +
   scale_x_discrete(limits = c(76, 98, 118, 138)) +
   facet_wrap(~Mouse_SID) +
-  theme(strip.text.x = element_text(size = 8))
+  theme(strip.text.x = element_text(size = 8)) +
+  labs(title = "Females")
 
 #plot_grid(cb.female.plot, cb.female.legend, rel_widths = c(1, .25))
 ```
@@ -176,7 +202,8 @@ cb.male.plot <- plot_microshades(mdf.male, cdf.male, x = "Age") +
   theme(axis.text.x = element_text(size = 8)) +
   scale_x_discrete(limits = c(76, 98, 118, 138)) +
   facet_wrap(~Mouse_SID) +
-  theme(strip.text.x = element_text(size = 8))
+  theme(strip.text.x = element_text(size = 8)) +
+  labs(title = "Males")
 
 #plot_grid(cb.male.plot, cb.male.legend, rel_widths = c(1, .25))
 ```
