@@ -11,6 +11,7 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(RColorBrewer)
+library(microbiomeMarker)
 ```
 
 #Define Paths
@@ -180,10 +181,26 @@ gavaged.plot <- plot_microshades(mdf.gavaged, cdf.gavaged, x = "Day") +
 plot_grid(gavaged.plot, gavaged.legend, rel_widths = c(1, .25))
 ```
 
-#LEfSe
-```{r}
+Visually, there appear to be some differences between the Akk-free/late PBS mice and the akk-gavaged mice. Most striking is that Bifidobacterium are only present in the akk-free and late PBS mice. There also appears to be a greater abundance of Dubosiella in the akkermansia-gavaged mice.
 
+#Differential Abundance
+LEfSe
+
+We want to focus on the endpoint samples.
+```{r}
+genus.ps <- gavaged.ps %>%
+  tax_glom(taxrank = "Genus")
+
+lef <- lefse(genus.ps,
+             class = "Group",
+             multicls_strat = TRUE)
 ```
+
+```{r}
+plot_ef_bar(lef)
+```
+
+It does appear that we were on to something thinking that Bifidobacterium were more indicative of mice unexposed to akkermansia. Akkermanisa are indicative of WT-gavaged mice which makes sense. Ruminococcus are indicative of 2086-gavaged mice and Blautia are also indicative of PBS mice, neither of which showed up as being a part of the top 20 taxa overall.
 
 #Akkermansia
 ```{r}
@@ -209,6 +226,21 @@ even.nmds_bs <- ordinate(even.ps, "NMDS", "bray")
 ```
 
 ```{r}
-plot_ordination(even.ps, even.nmds_bs, type = "samples", color = "Day", shape = "Group")
+plot_ordination(even.ps, even.nmds_bs, color = "Day", shape = "Group") +
+  geom_point(size = 5)
 ```
 
+
+#Ruminococcus
+```{r}
+rumino.ps <- rel.ps %>%
+  subset_taxa(Genus == "Ruminococcus") %>%
+  tax_glom(taxrank = "Genus")
+print(akks.ps)
+```
+
+```{r}
+rumino <- rumino.ps %>%
+  otu_table() %>%
+  as.data.frame()
+```
