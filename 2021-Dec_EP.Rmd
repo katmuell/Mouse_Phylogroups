@@ -1,0 +1,236 @@
+---
+title: "Emi's Analysis"
+output: html_document
+---
+
+#Load Libraries
+```{r}
+library(phyloseq)
+library(readr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(RColorBrewer)
+library(microbiomeMarker)
+library(microshades)
+library(speedyseq)
+library(cowplot)
+```
+
+#Define Paths
+```{r}
+rds <- "/work/kdm65/2021-Dec.rds"
+```
+
+Load and check phyloseq object
+```{r}
+all_mice.ps <- readRDS(rds)
+print(all_mice.ps)
+```
+
+```{r}
+sample_variables(all_mice.ps)
+```
+
+Subset for just Dustin's mice and remove bad samples
+```{r}
+just.emi.ps <- all_mice.ps %>%
+  subset_samples(Owner == "Emi") %>%
+  subset_samples(!SampleName %in% c("1","12", "13"))
+just.emi.ps
+```
+
+```{r}
+plot_bar(just.emi.ps)
+```
+None of these samples stand out as having super low read counts, so I don't need to prune any out.
+
+#Relative Abundance
+```{r}
+rel.ps <- just.emi.ps %>%
+  transform_sample_counts(function(x) x/sum(x))
+```
+
+#Abundance Plots
+```{r}
+AbundancePlot = function(ps, tax_level) {
+  ps %>%
+    plot_bar(fill = tax_level, x = "Age") +
+    labs(y = "Relative Abundance") +
+    geom_bar(aes_string(color = tax_level, fill = tax_level),
+             stat = "identity",
+             position = "stack") +
+    scale_x_discrete(limits = c(76, 98, 118, 138))
+}
+```
+
+```{r}
+females.ps <- rel.ps %>%
+  subset_samples(Sex == "f")
+males.ps <- rel.ps %>%
+  subset_samples(Sex == "m")
+```
+
+```{r}
+legend <- cowplot::get_legend(AbundancePlot(females.ps, "Phylum"))
+
+female.plot <- AbundancePlot(females.ps, "Phylum") +
+  facet_grid(~Mouse_SID) +
+  theme(legend.position = "none") +
+  labs(title = "Females")
+male.plot <- AbundancePlot(males.ps, "Phylum") +
+  facet_grid(~Mouse_SID) +
+  theme(legend.position = "none") +
+  labs(title = "Males")
+
+sexes <- plot_grid(female.plot, male.plot, ncol = 1)
+plot_grid(sexes, legend, rel_widths = c(3,1))
+```
+
+#Pruning
+Prune to the top 20 genera
+```{r}
+rel.ps %>%
+  taxa_sums %>%
+  sort(decreasing = TRUE) %>%
+  names %>%
+  head(20) ->
+  top20
+
+rel.ps %>%
+  prune_taxa(top20, .) ->
+  prune20.rel
+prune20.rel
+```
+
+```{r}
+pruned.female.ps <- prune20.rel %>%
+  subset_samples(Sex == "f")
+
+pruned.male.ps <- prune20.rel %>%
+  subset_samples(Sex == "m")
+```
+
+```{r}
+pruned.legend <- cowplot::get_legend(AbundancePlot(pruned.female.ps, "Genus"))
+
+pruned.female.plot <- AbundancePlot(pruned.female.ps, "Genus") +
+  facet_grid(~Mouse_SID) +
+  theme(legend.position = "none") +
+  labs(title = "Females")
+pruned.male.plot <- AbundancePlot(pruned.male.ps, "Genus") +
+  facet_grid(~Mouse_SID) +
+  theme(legend.position = "none") +
+  labs(title = "Males")
+
+pruned.sexes <- plot_grid(pruned.female.plot, pruned.male.plot, ncol = 1)
+plot_grid(pruned.sexes, pruned.legend, rel_widths = c(3,1))
+```
+
+Trying out a colorblind friendly plotting package
+
+```{r}
+#melt to dataframes
+mdf.female <- prep_mdf(pruned.female.ps)
+mdf.male <- prep_mdf(pruned.male.ps)
+
+#generate color objects
+color_objs.female <- create_color_dfs(mdf.female,
+                                        selected_groups = c("Bacteroidota", "Firmicutes", "Verrucomicrobiota"),
+                                        cvd = TRUE)
+color_objs.female <- reorder_samples_by(color_objs.female$mdf, color_objs.female$cdf)
+
+color_objs.male <- create_color_dfs(mdf.male,
+                                        selected_groups = c("Firmicutes", "Verrucomicrobiota"),
+                                        cvd = TRUE)
+color_objs.male <- reorder_samples_by(color_objs.male$mdf, color_objs.male$cdf)
+
+#Extract
+mdf.female <- color_objs.female$mdf
+cdf.female <- color_objs.female$cdf
+
+mdf.male <- color_objs.male$mdf
+cdf.male <- color_objs.male$cdf
+```
+
+```{r}
+cb.female.legend <- custom_legend(mdf.female, cdf.female, legend_text_size = 15)
+
+cb.female.plot <- plot_microshades(mdf.female, cdf.female, x = "Age") +
+  scale_y_continuous(labels = scales::percent, expand = expansion(0)) +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(size = 8)) +
+  scale_x_discrete(limits = c(76, 98, 118, 138)) +
+  facet_wrap(~Mouse_SID) +
+  theme(strip.text.x = element_text(size = 8))
+
+#plot_grid(cb.female.plot, cb.female.legend, rel_widths = c(1, .25))
+```
+
+```{r}
+cb.male.legend <- custom_legend(mdf.male, cdf.male, legend_text_size = 15)
+
+cb.male.plot <- plot_microshades(mdf.male, cdf.male, x = "Age") +
+  scale_y_continuous(labels = scales::percent, expand = expansion(0)) +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(size = 8)) +
+  scale_x_discrete(limits = c(76, 98, 118, 138)) +
+  facet_wrap(~Mouse_SID) +
+  theme(strip.text.x = element_text(size = 8))
+
+#plot_grid(cb.male.plot, cb.male.legend, rel_widths = c(1, .25))
+```
+
+```{r}
+cb.sexes <- plot_grid(cb.female.plot, cb.male.plot, ncol = 1)
+plot_grid(cb.sexes, cb.female.legend, rel_widths = c(3,1))
+```
+
+#Differential Abundance
+LEfSe
+```{r}
+genus.ps <- rel.ps %>%
+  tax_glom(taxrank = "Genus")
+
+lef <- lefse(genus.ps,
+             class = "Sex",
+             multicls_strat = TRUE)
+```
+
+Filter for low abundance taxa?
+```{r}
+mean_cutoff = 0.001
+mean_test = function(x) {
+  mean(x) >= mean_cutoff
+}
+
+pct0.1_prune.rel <- rel.ps %>%
+  filter_taxa(mean_test, prune = TRUE)
+```
+
+```{r}
+genus.ps <- pct0.1_prune.rel %>%
+  tax_glom(taxrank = "Genus")
+
+lef <- lefse(genus.ps,
+             class = "Sex",
+             multicls_strat = TRUE)
+```
+
+```{r}
+plot_ef_bar(lef)
+```
+
+#Akkermansia
+```{r}
+akks.ps <- rel.ps %>%
+  subset_taxa(Genus == "Akkermansia") %>%
+  tax_glom(taxrank = "Genus")
+print(akks.ps)
+```
+
+```{r}
+akks <- akks.ps %>%
+  otu_table() %>%
+  as.data.frame()
+```
