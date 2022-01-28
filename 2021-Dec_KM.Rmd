@@ -178,7 +178,8 @@ location.lef <- lefse(genus.ps,
 ```
 
 ```{r}
-plot_ef_bar(location.lef)
+plot_ef_bar(location.lef) +
+  labs(title = "Colon vs Lumen")
 ```
 
 Lumen vs Tissue
@@ -189,7 +190,8 @@ type.lef <- lefse(genus.ps,
 ```
 
 ```{r}
-plot_ef_bar(type.lef)
+plot_ef_bar(type.lef) +
+  labs(title = "Lumen vs Tissue")
 ```
 
 BAA-835 vs Akk1616
@@ -200,7 +202,8 @@ strain.lef <- lefse(genus.ps,
 ```
 
 ```{r}
-plot_ef_bar(strain.lef)
+plot_ef_bar(strain.lef) +
+  labs(title = "Gavage Strains")
 ```
 
 Colidextribacter and Roseburia (associated w/ BAA-835 colinized mice) have been found to be decreased in people with parkinson's disease https://pubmed.ncbi.nlm.nih.gov/34776854/
