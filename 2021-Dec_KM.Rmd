@@ -133,36 +133,30 @@ plot_grid(cb.BAA.plot, cb.BAA.legend, rel_widths = c(1, .25))
 ```
 
 ```{r}
-cb.1616.legend <- custom_legend(mdf.BAA, cdf.BAA, legend_text_size = 15)
+cb.1616.legend <- custom_legend(mdf.1616, cdf.1616, legend_text_size = 15)
 
-cb.BAA.plot <- plot_microshades(mdf.BAA, cdf.BAA) +
+cb.1616.plot <- plot_microshades(mdf.1616, cdf.1616) +
   scale_y_continuous(labels = scales::percent, expand = expansion(0)) +
   theme(legend.position = "none") +
   theme(axis.text.x = element_text(size = 8)) +
   facet_wrap(~GI_location~Sample_type, scale = "free_x") +
   theme(strip.text.x = element_text(size = 8)) +
-  labs(title = "BAA-835")
+  labs(title = "Akk1616")
 
-plot_grid(cb.BAA.plot, cb.BAA.legend, rel_widths = c(1, .25))
+plot_grid(cb.1616.plot, cb.1616.legend, rel_widths = c(1, .25))
 ```
 
 ```{r}
-cb.sexes <- plot_grid(cb.female.plot, cb.male.plot, ncol = 1)
-plot_grid(cb.sexes, cb.female.legend, rel_widths = c(3,1))
+cb.faceted <- plot_grid(cb.BAA.plot, cb.1616.plot, ncol = 1)
+plot_grid(cb.faceted, cb.BAA.legend, rel_widths = c(3,1))
 ```
+
+Visually, I'm not seeing much of a difference between BAA-835 and Akk1616 colonized mice when looking at each individual sample type/location combination. Comparing colon vs ileum, it looks like Actinobacteriota and Bacteroidota are only present in ileum samples. Comparing lumen vs tissue, there does seem to be relatively more akkermansia in the tissue samples, which is consistent to prior qPCR results.
 
 #Differential Abundance
 LEfSe
-```{r}
-genus.ps <- rel.ps %>%
-  tax_glom(taxrank = "Genus")
 
-lef <- lefse(genus.ps,
-             class = "Sex",
-             multicls_strat = TRUE)
-```
-
-Filter for low abundance taxa?
+Filter out low abundance taxa
 ```{r}
 mean_cutoff = 0.001
 mean_test = function(x) {
@@ -171,20 +165,47 @@ mean_test = function(x) {
 
 pct0.1_prune.rel <- rel.ps %>%
   filter_taxa(mean_test, prune = TRUE)
-```
 
-```{r}
 genus.ps <- pct0.1_prune.rel %>%
   tax_glom(taxrank = "Genus")
+```
 
-lef <- lefse(genus.ps,
-             class = "Sex",
+Colon vs Ileum
+```{r}
+location.lef <- lefse(genus.ps,
+             class = "GI_location",
              multicls_strat = TRUE)
 ```
 
 ```{r}
-plot_ef_bar(lef)
+plot_ef_bar(location.lef)
 ```
+
+Lumen vs Tissue
+```{r}
+type.lef <- lefse(genus.ps,
+             class = "Sample_type",
+             multicls_strat = TRUE)
+```
+
+```{r}
+plot_ef_bar(type.lef)
+```
+
+BAA-835 vs Akk1616
+```{r}
+strain.lef <- lefse(genus.ps,
+             class = "Group",
+             multicls_strat = TRUE)
+```
+
+```{r}
+plot_ef_bar(strain.lef)
+```
+
+Colidextribacter and Roseburia (associated w/ BAA-835 colinized mice) have been found to be decreased in people with parkinson's disease https://pubmed.ncbi.nlm.nih.gov/34776854/
+
+Enterorhabdus (associated w/ Akk1616 colonized mice) have been found to be positively associated with indicators of high-fat diet induced obesity https://pubmed.ncbi.nlm.nih.gov/35067837/
 
 #Akkermansia
 ```{r}
