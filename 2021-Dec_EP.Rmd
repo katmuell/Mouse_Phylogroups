@@ -128,32 +128,44 @@ plot_grid(pruned.sexes, pruned.legend, rel_widths = c(3,1))
 ```
 
 Trying out a colorblind friendly plotting package
-
+Everything together
 ```{r}
 #melt to dataframes
-mdf.female <- prep_mdf(pruned.female.ps)
-mdf.male <- prep_mdf(pruned.male.ps)
+mdf.all <- prep_mdf(rel.ps)
 
 #generate color objects
-color_objs.female <- create_color_dfs(mdf.female,
-                                        selected_groups = c("Bacteroidota", "Firmicutes", "Verrucomicrobiota"),
-                                        cvd = TRUE)
-color_objs.female <- reorder_samples_by(color_objs.female$mdf, color_objs.female$cdf)
-
-color_objs.male <- create_color_dfs(mdf.male,
-                                        selected_groups = c("Firmicutes", "Verrucomicrobiota"),
-                                        cvd = TRUE)
-color_objs.male <- reorder_samples_by(color_objs.male$mdf, color_objs.male$cdf)
+color_objs.all <- create_color_dfs(mdf.all,
+                                   selected_groups =c("Actinobacteriota","Bacteroidota", "Desulfobacterota", "Firmicutes", "Verrucomicrobiota"),
+                                   cvd = TRUE)
+color_objs.all <- reorder_samples_by(color_objs.all$mdf, color_objs.all$cdf)
 
 #Extract
-mdf.female <- color_objs.female$mdf
-cdf.female <- color_objs.female$cdf
-
-mdf.male <- color_objs.male$mdf
-cdf.male <- color_objs.male$cdf
+mdf.all <- color_objs.all$mdf
+cdf.all <- color_objs.all$cdf
 ```
 
-Pruning bad?
+```{r}
+cb.all.plot <- plot_microshades(mdf.all, cdf.all) +
+  scale_y_continuous(labels = scales::percent, expand = expansion(0)) +
+  theme(axis.text.x = element_text(size = 8)) +
+  theme(strip.text.x = element_text(size = 8))
+
+cb.all.plot
+```
+
+
+```{r}
+rel.ps %>%
+  plot_bar(fill = "Genus") +
+  labs(y = "Relative Abundance") +
+  geom_bar(aes_string(color = "Genus", fill = "Genus"),
+           stat = "identity", position = "stack") +
+  theme(legend.position = "none")
+```
+
+Separate males and females and order by time
+
+The microshades package doesn't represent abundances correctly after pruning. All samples are filled to 100% even if pruning, say to the top20 taxa, only represents part of the community. Therefore, I'll need to just use the unpruned data and decide which Phyla to accomodate for on the legend.
 ```{r}
 #melt to dataframes
 mdf.female <- prep_mdf(females.ps)
