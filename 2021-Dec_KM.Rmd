@@ -1,0 +1,201 @@
+---
+title: "Katherine's Analysis"
+output: html_document
+---
+
+#Load Libraries
+```{r}
+library(phyloseq)
+library(readr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(RColorBrewer)
+library(microbiomeMarker)
+library(microshades)
+library(speedyseq)
+library(cowplot)
+```
+
+#Define Paths
+```{r}
+rds <- "/work/kdm65/2021-Dec.rds"
+```
+
+Load and check phyloseq object
+```{r}
+all_mice.ps <- readRDS(rds)
+print(all_mice.ps)
+```
+
+```{r}
+sample_variables(all_mice.ps)
+```
+
+Subset for just Katherine's mice and remove bad samples
+```{r}
+just.katherine.ps <- all_mice.ps %>%
+  subset_samples(Owner == "Katherine") %>%
+  subset_samples(!SampleName %in% c("C1M1_ileum_lumen", "C1M1_ileum_tissue", "C2M2_ileum_lumen", "C2M2_ileum_tissue", "C5M1_ileum_lumen", "C5M2_ileum_tissue", "C6M1_colon_lumen", "C6M1_ileum_lumen", "C6M1_ileum_tissue"))
+just.katherine.ps
+```
+
+```{r}
+plot_bar(just.katherine.ps)
+```
+None of these samples stand out as having super low read counts, so I don't need to prune any out.
+
+#Relative Abundance
+```{r}
+rel.ps <- just.katherine.ps %>%
+  transform_sample_counts(function(x) x/sum(x))
+```
+
+#Abundance Plots
+
+Everything together
+```{r}
+#melt to dataframes
+mdf.all <- prep_mdf(rel.ps)
+
+#generate color objects
+color_objs.all <- create_color_dfs(mdf.all,
+                                   selected_groups =c("Actinobacteriota","Bacteroidota", "Firmicutes", "Verrucomicrobiota"),
+                                   cvd = TRUE)
+color_objs.all <- reorder_samples_by(color_objs.all$mdf, color_objs.all$cdf)
+
+#Extract
+mdf.all <- color_objs.all$mdf
+cdf.all <- color_objs.all$cdf
+```
+
+```{r}
+cb.all.plot <- plot_microshades(mdf.all, cdf.all) +
+  scale_y_continuous(labels = scales::percent, expand = expansion(0)) +
+  theme(axis.text.x = element_text(size = 8)) +
+  theme(strip.text.x = element_text(size = 8))
+
+cb.all.plot
+```
+
+Separate mice colonized by BAA-835 and Akk1616
+```{r}
+BAA835.ps <- rel.ps %>%
+  subset_samples(Group == "BAA-835")
+
+BAA835.ps
+```
+
+```{r}
+Akk1616.ps <- rel.ps %>%
+  subset_samples(Group == "Akk1616")
+
+Akk1616.ps
+```
+
+
+```{r}
+#melt to dataframes
+mdf.BAA <- prep_mdf(BAA835.ps)
+mdf.1616 <- prep_mdf(Akk1616.ps)
+
+#generate color objects
+color_objs.BAA <- create_color_dfs(mdf.BAA,
+                                        selected_groups =c("Actinobacteriota","Bacteroidota", "Firmicutes", "Verrucomicrobiota"),
+                                        cvd = TRUE)
+color_objs.BAA <- reorder_samples_by(color_objs.BAA$mdf, color_objs.BAA$cdf)
+
+color_objs.1616 <- create_color_dfs(mdf.1616,
+                                        selected_groups =c("Actinobacteriota","Bacteroidota", "Firmicutes", "Verrucomicrobiota"),
+                                        cvd = TRUE)
+color_objs.1616 <- reorder_samples_by(color_objs.1616$mdf, color_objs.1616$cdf)
+
+#Extract
+mdf.BAA <- color_objs.BAA$mdf
+cdf.BAA <- color_objs.BAA$cdf
+
+mdf.1616 <- color_objs.1616$mdf
+cdf.1616 <- color_objs.1616$cdf
+```
+
+```{r}
+cb.BAA.legend <- custom_legend(mdf.BAA, cdf.BAA, legend_text_size = 15)
+
+cb.BAA.plot <- plot_microshades(mdf.BAA, cdf.BAA) +
+  scale_y_continuous(labels = scales::percent, expand = expansion(0)) +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(size = 8)) +
+  facet_wrap(~GI_location~Sample_type, scale = "free_x") +
+  theme(strip.text.x = element_text(size = 8)) +
+  labs(title = "BAA-835")
+
+plot_grid(cb.BAA.plot, cb.BAA.legend, rel_widths = c(1, .25))
+```
+
+```{r}
+cb.1616.legend <- custom_legend(mdf.BAA, cdf.BAA, legend_text_size = 15)
+
+cb.BAA.plot <- plot_microshades(mdf.BAA, cdf.BAA) +
+  scale_y_continuous(labels = scales::percent, expand = expansion(0)) +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(size = 8)) +
+  facet_wrap(~GI_location~Sample_type, scale = "free_x") +
+  theme(strip.text.x = element_text(size = 8)) +
+  labs(title = "BAA-835")
+
+plot_grid(cb.BAA.plot, cb.BAA.legend, rel_widths = c(1, .25))
+```
+
+```{r}
+cb.sexes <- plot_grid(cb.female.plot, cb.male.plot, ncol = 1)
+plot_grid(cb.sexes, cb.female.legend, rel_widths = c(3,1))
+```
+
+#Differential Abundance
+LEfSe
+```{r}
+genus.ps <- rel.ps %>%
+  tax_glom(taxrank = "Genus")
+
+lef <- lefse(genus.ps,
+             class = "Sex",
+             multicls_strat = TRUE)
+```
+
+Filter for low abundance taxa?
+```{r}
+mean_cutoff = 0.001
+mean_test = function(x) {
+  mean(x) >= mean_cutoff
+}
+
+pct0.1_prune.rel <- rel.ps %>%
+  filter_taxa(mean_test, prune = TRUE)
+```
+
+```{r}
+genus.ps <- pct0.1_prune.rel %>%
+  tax_glom(taxrank = "Genus")
+
+lef <- lefse(genus.ps,
+             class = "Sex",
+             multicls_strat = TRUE)
+```
+
+```{r}
+plot_ef_bar(lef)
+```
+
+#Akkermansia
+```{r}
+akks.ps <- rel.ps %>%
+  subset_taxa(Genus == "Akkermansia") %>%
+  tax_glom(taxrank = "Genus")
+print(akks.ps)
+```
+
+```{r}
+akks <- akks.ps %>%
+  otu_table() %>%
+  as.data.frame()
+```
