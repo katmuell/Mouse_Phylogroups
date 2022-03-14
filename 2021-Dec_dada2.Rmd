@@ -23,6 +23,7 @@ library(tidyr)
 #Directories
 data.dir = "/work/kdm65"
 demux.dir = "/work/kdm65/16S_Dec_2021"
+demuc.redo.dir = "/work/kdm65/16S_Mar_2022"
 output.dir = "/work/kdm65/scratch"
 ```
 
@@ -35,20 +36,16 @@ dir_create(output.dir)
 
 ```{r}
 #Files
+silva.ref = file.path(data.dir, "silva_nr99_v138.1_wSpecies_train_set.fa.gz")
+
 #Initial Run
 map.file = file.path(data.dir, "16S_metadata.txt")
-silva.ref = file.path(data.dir, "silva_nr99_v138.1_wSpecies_train_set.fa.gz")
 ps.rds = file.path(data.dir, "2021-Dec.rds")
-```
 
-```{r}
 #Redone Run
 redo.map.file = file.path(data.dir, "16S_metadata_redo.txt")
-silva.ref = file.path(data.dir, "silva_nr99_v138.1_wSpecies_train_set.fa.gz")
 redo.ps.rds = file.path(data.dir, "2021-Dec_redo.rds")
-```
 
-```{r}
 #Merged Runs
 merged.ps.rds = file.path(data.dir, "2021-Dec_merged.rds")
 ```
