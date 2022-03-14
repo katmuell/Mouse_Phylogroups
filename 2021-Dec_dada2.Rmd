@@ -35,12 +35,27 @@ dir_create(output.dir)
 
 ```{r}
 #Files
+#Initial Run
 map.file = file.path(data.dir, "16S_metadata.txt")
 silva.ref = file.path(data.dir, "silva_nr99_v138.1_wSpecies_train_set.fa.gz")
 ps.rds = file.path(data.dir, "2021-Dec.rds")
 ```
 
-#Filter and Trim
+```{r}
+#Redone Run
+redo.map.file = file.path(data.dir, "16S_metadata_redo.txt")
+silva.ref = file.path(data.dir, "silva_nr99_v138.1_wSpecies_train_set.fa.gz")
+redo.ps.rds = file.path(data.dir, "2021-Dec_redo.rds")
+```
+
+```{r}
+#Merged Runs
+merged.ps.rds = file.path(data.dir, "2021-Dec_merged.rds")
+```
+
+
+# Initial Run
+## Filter and Trim
 Get lists of forward and reverse reads
 ```{r}
 fnFs <- sort(list.files(demux.dir, pattern = "_L001_R1_001.fastq.gz", full.names = TRUE))
@@ -66,7 +81,7 @@ print(fnRs)
 print(sample.names)
 ```
 
-#Quality Profiles
+## Quality Profiles
 ```{r}
 plotQualityProfile(fnFs[1:2])
 ```
@@ -75,7 +90,7 @@ plotQualityProfile(fnFs[1:2])
 plotQualityProfile(fnRs[1:2])
 ```
 
-#Filter Reads
+## Filter Reads
 Assign filepaths for filtered files
 ```{r}
 filt_path <- file.path(output.dir, "filtered")
@@ -94,7 +109,7 @@ filt.out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, trimLeft = 10, truncLen = 
 head(filt.out)
 ```
 
-#Learn Error Rates
+## Learn Error Rates
 ```{r}
 errF <- learnErrors(filtFs, multithread = TRUE)
 errR <- learnErrors(filtRs, multithread = TRUE)
@@ -104,7 +119,7 @@ errR <- learnErrors(filtRs, multithread = TRUE)
 plotErrors(errF, nominalQ = TRUE)
 ```
 
-#Dereplication
+## Dereplication
 ```{r}
 derepFs <- derepFastq(filtFs, verbose = TRUE)
 derepRs <- derepFastq(filtRs, verbose = TRUE)
@@ -112,7 +127,7 @@ names(derepFs) <- sample.names
 names(derepRs) <- sample.names
 ```
 
-#Sample Inference
+## Sample Inference
 ```{r}
 dadaFs <- dada(derepFs, err=errF, multithread = TRUE)
 dadaRs <- dada(derepRs, err=errR, multithread = TRUE)
@@ -122,7 +137,7 @@ dadaRs <- dada(derepRs, err=errR, multithread = TRUE)
 dadaFs[[2]]
 ```
 
-#Merge Paired Reads
+## Merge Paired Reads
 ```{r}
 mergers <- mergePairs(dadaFs, derepFs, dadaRs, derepRs, verbose = TRUE)
 ```
@@ -131,7 +146,7 @@ mergers <- mergePairs(dadaFs, derepFs, dadaRs, derepRs, verbose = TRUE)
 head(mergers[[2]])
 ```
 
-#Further Processing
+## Further Processing
 Construct sequence table
 ```{r}
 seqtab <- makeSequenceTable(mergers)
@@ -196,7 +211,7 @@ track %>%
   ggplot(mapping = aes(x = stage, y = counts, by = sample, group = sample)) + geom_line(alpha = 0.05) + theme_classic()
 ```
 
-#Assign Taxonomy
+## Assign Taxonomy
 ```{r}
 taxa <- assignTaxonomy(seqtab.nochim, silva.ref, multithread = TRUE)
 taxa.print <- taxa
@@ -204,7 +219,7 @@ rownames(taxa.print) <- NULL
 head(taxa.print)
 ```
 
-#Make Phyloseq Object
+## Make Phyloseq Object
 Load metadata
 ```{r}
 metadata.df = read_tsv(map.file)
@@ -249,7 +264,219 @@ loaded.ps = read_rds(ps.rds)
 print(loaded.ps)
 ```
 
-#Session Info
+
+# Redone Samples
+## Filter and Trim
+Get lists of forward and reverse reads
+```{r}
+fnFs <- sort(list.files(demux.dir, pattern = "_L001_R1_001.fastq.gz", full.names = TRUE))
+fnRs <- sort(list.files(demux.dir, pattern = "_L001_R2_001.fastq.gz", full.names = TRUE))
+
+forward_fastq_suffix = "_L001_R1_001.fastq.gz"
+
+fnFs %>%
+  basename %>%
+  str_replace(forward_fastq_suffix,"") ->
+  sample.names
+```
+
+```{r}
+print(fnFs)
+```
+
+```{r}
+print(fnRs)
+```
+
+```{r}
+print(sample.names)
+```
+
+## Quality Profiles
+```{r}
+plotQualityProfile(fnFs[1:4])
+```
+
+```{r}
+plotQualityProfile(fnRs[1:4])
+```
+Samples 16, 25, and 51 didn't have a ton of reads. We're not sure what the problem was during the sequencing process for these, but I'm not too suprised that sample 16 and 25 here also tends to be of lower quality.
+
+
+## Filter Reads
+Assign filepaths for filtered files
+```{r}
+filt_path <- file.path(output.dir, "filtered")
+filtFs <- file.path(filt_path, paste0(sample.names, "_F_filt.fastq.gz"))
+filtRs <- file.path(filt_path, paste0(sample.names, "_R_filt.fastq.gz"))
+```
+
+Filter reads
+```{r}
+filt.out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, trimLeft = 10, truncLen = c(245,245),
+                          maxN = 0, maxEE = c(2,2), truncQ = 2, rm.phix = TRUE,
+                          compress = TRUE, multithread = TRUE)
+```
+
+```{r}
+head(filt.out)
+```
+
+## Learn Error Rates
+```{r}
+errF <- learnErrors(filtFs, multithread = TRUE)
+errR <- learnErrors(filtRs, multithread = TRUE)
+```
+
+```{r}
+plotErrors(errF, nominalQ = TRUE)
+```
+
+## Dereplication
+```{r}
+derepFs <- derepFastq(filtFs, verbose = TRUE)
+derepRs <- derepFastq(filtRs, verbose = TRUE)
+names(derepFs) <- sample.names
+names(derepRs) <- sample.names
+```
+
+## Sample Inference
+```{r}
+dadaFs <- dada(derepFs, err=errF, multithread = TRUE)
+dadaRs <- dada(derepRs, err=errR, multithread = TRUE)
+```
+
+```{r}
+dadaFs[[2]]
+```
+
+## Merge Paired Reads
+```{r}
+mergers <- mergePairs(dadaFs, derepFs, dadaRs, derepRs, verbose = TRUE)
+```
+
+```{r}
+head(mergers[[2]])
+```
+
+## Further Processing
+Construct sequence table
+```{r}
+seqtab <- makeSequenceTable(mergers)
+dim(seqtab)
+```
+
+```{r}
+table(nchar(getSequences(seqtab)))
+```
+
+```{r}
+seqtab2 <- seqtab[, nchar(colnames(seqtab)) %in% seq(417,449)]
+```
+
+Remove chimeras
+```{r}
+seqtab.nochim <- removeBimeraDenovo(seqtab2, method = "consensus", multithread = TRUE, verbose = TRUE)
+dim(seqtab.nochim)
+```
+
+```{r}
+sum(seqtab.nochim)/sum(seqtab2)
+```
+
+Track reads through the pipeline
+```{r}
+getN <- function(x) sum(getUniques(x))
+filt.out %>%
+  as_tibble(rownames = "filename") %>%
+  mutate(sample = str_replace(filename, forward_fastq_suffix, "")) %>%
+  select(sample, input = reads.in, filtered = reads.out) ->
+  track
+
+sapply(dadaFs, getN) %>%
+  enframe(name = "sample", value = "denoised") ->
+  denoised
+track %<>% full_join(denoised, by = c("sample"))
+
+sapply(mergers, getN) %>%
+  enframe(name = "sample", value = "merged") ->
+  merged
+track %<>% full_join(merged, by = c("sample"))
+
+rowSums(seqtab2) %>%
+  enframe(name = "sample", value = "tabled") ->
+  tabled
+track %<>% full_join(tabled, by = c("sample"))
+
+rowSums(seqtab.nochim) %>%
+  enframe(name = "sample", value = "nonchim") ->
+  nonchim
+track %<>% full_join(nonchim, by = c("sample"))
+
+track
+```
+
+```{r}
+track %>%
+  gather(key = "stage", value = "counts", -c("sample")) %>%
+  replace_na(list(counts = 0)) %>%
+  mutate(stage = factor(stage, levels = c('input', 'filtered', 'denoised', 'merged', 'tabled', 'nonchim'))) %>%
+  ggplot(mapping = aes(x = stage, y = counts, by = sample, group = sample)) + geom_line(alpha = 0.05) + theme_classic()
+```
+
+## Assign Taxonomy
+```{r}
+taxa <- assignTaxonomy(seqtab.nochim, silva.ref, multithread = TRUE)
+taxa.print <- taxa
+rownames(taxa.print) <- NULL
+head(taxa.print)
+```
+
+## Make Phyloseq Object
+Load metadata
+```{r}
+metadata.df = read_tsv(redo.map.file)
+
+metadata.df
+```
+
+Construct phyloseq object
+```{r}
+otus = otu_table(seqtab.nochim, taxa_are_rows = FALSE)
+sd = sample_data(metadata.df)
+redo.ps <- phyloseq(otus, sd, tax_table(taxa))
+
+redo.ps
+```
+
+Save phyloseq object as RDS
+```{r}
+write_rds(redo.ps, redo.ps.rds)
+```
+
+Confirm that the RDS is usable
+```{r}
+loaded.redo.ps = read_rds(redo.ps.rds)
+print(loaded.redo.ps)
+```
+
+# Merge Phyloseq Objects
+```{r}
+#Load initial object
+loaded.initial.ps = read_rds(ps.rds)
+
+print(loaded.initial.ps)
+```
+
+```{r}
+#Merge phyloseq objects
+merged.ps <- merge_phyloseq(loaded.initial.ps, loaded.redo.ps)
+
+#Save as new RDS
+write_rds(merged.ps, merged.ps.rds)
+```
+
+# Session Info
 ```{r}
 sessionInfo()
 ```
