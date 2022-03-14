@@ -132,8 +132,8 @@ library(cowplot)
 
 ```{r}
 #melt to dataframes
-mdf.akk_free <- prep_mdf(pruned.akk_free.ps)
-mdf.gavaged <- prep_mdf(pruned.gavaged.ps)
+mdf.akk_free <- prep_mdf(akk_free.ps)
+mdf.gavaged <- prep_mdf(gavaged.ps)
 
 #generate color objects
 color_objs.akk_free <- create_color_dfs(mdf.akk_free,
@@ -142,7 +142,7 @@ color_objs.akk_free <- create_color_dfs(mdf.akk_free,
 color_objs.akk_free <- reorder_samples_by(color_objs.akk_free$mdf, color_objs.akk_free$cdf)
 
 color_objs.gavaged <- create_color_dfs(mdf.gavaged,
-                                        selected_groups = c("Actinobacteriota", "Bacteroidota", "Firmicutes"),
+                                        selected_groups = c("Actinobacteriota", "Bacteroidota", "Firmicutes", "Verrucomicrobiota"),
                                         cvd = TRUE)
 color_objs.gavaged <- reorder_samples_by(color_objs.gavaged$mdf, color_objs.gavaged$cdf)
 
