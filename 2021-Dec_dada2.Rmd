@@ -23,7 +23,7 @@ library(tidyr)
 #Directories
 data.dir = "/work/kdm65"
 demux.dir = "/work/kdm65/16S_Dec_2021"
-demuc.redo.dir = "/work/kdm65/16S_Mar_2022"
+demux.redo.dir = "/work/kdm65/16S_Mar_2022"
 output.dir = "/work/kdm65/scratch"
 ```
 
@@ -266,36 +266,36 @@ print(loaded.ps)
 ## Filter and Trim
 Get lists of forward and reverse reads
 ```{r}
-fnFs <- sort(list.files(demux.dir, pattern = "_L001_R1_001.fastq.gz", full.names = TRUE))
-fnRs <- sort(list.files(demux.dir, pattern = "_L001_R2_001.fastq.gz", full.names = TRUE))
+fnFs.redo <- sort(list.files(demux.redo.dir, pattern = "_L001_R1_001.fastq.gz", full.names = TRUE))
+fnRs.redo <- sort(list.files(demux.redo.dir, pattern = "_L001_R2_001.fastq.gz", full.names = TRUE))
 
-forward_fastq_suffix = "_L001_R1_001.fastq.gz"
+forward_fastq_suffix.redo = "_L001_R1_001.fastq.gz"
 
-fnFs %>%
+fnFs.redo %>%
   basename %>%
-  str_replace(forward_fastq_suffix,"") ->
-  sample.names
+  str_replace(forward_fastq_suffix.redo,"") ->
+  sample.names.redo
 ```
 
 ```{r}
-print(fnFs)
+print(fnFs.redo)
 ```
 
 ```{r}
-print(fnRs)
+print(fnRs.redo)
 ```
 
 ```{r}
-print(sample.names)
+print(sample.names.redo)
 ```
 
 ## Quality Profiles
 ```{r}
-plotQualityProfile(fnFs[1:4])
+plotQualityProfile(fnFs.redo[1:4])
 ```
 
 ```{r}
-plotQualityProfile(fnRs[1:4])
+plotQualityProfile(fnRs.redo[1:4])
 ```
 Samples 16, 25, and 51 didn't have a ton of reads. We're not sure what the problem was during the sequencing process for these, but I'm not too suprised that sample 16 and 25 here also tends to be of lower quality.
 
@@ -303,145 +303,147 @@ Samples 16, 25, and 51 didn't have a ton of reads. We're not sure what the probl
 ## Filter Reads
 Assign filepaths for filtered files
 ```{r}
-filt_path <- file.path(output.dir, "filtered")
-filtFs <- file.path(filt_path, paste0(sample.names, "_F_filt.fastq.gz"))
-filtRs <- file.path(filt_path, paste0(sample.names, "_R_filt.fastq.gz"))
+filt_path.redo <- file.path(output.dir, "filtered.redo")
+filtFs.redo <- file.path(filt_path.redo, paste0(sample.names.redo, "_F_filt.fastq.gz"))
+filtRs.redo <- file.path(filt_path.redo, paste0(sample.names.redo, "_R_filt.fastq.gz"))
 ```
 
 Filter reads
 ```{r}
-filt.out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, trimLeft = 10, truncLen = c(245,245),
-                          maxN = 0, maxEE = c(2,2), truncQ = 2, rm.phix = TRUE,
+filt.out.redo <- filterAndTrim(fnFs.redo, filtFs.redo, fnRs.redo, filtRs.redo, trimLeft = 10, truncLen = c(245,245),
+                          maxN = 0, maxEE = c(2,5), truncQ = 2, rm.phix = TRUE,
                           compress = TRUE, multithread = TRUE)
 ```
 
 ```{r}
-head(filt.out)
+head(filt.out.redo)
 ```
 
 ## Learn Error Rates
 ```{r}
-errF <- learnErrors(filtFs, multithread = TRUE)
-errR <- learnErrors(filtRs, multithread = TRUE)
+errF.redo <- learnErrors(filtFs.redo, multithread = TRUE)
+errR.redo <- learnErrors(filtRs.redo, multithread = TRUE)
 ```
 
 ```{r}
-plotErrors(errF, nominalQ = TRUE)
+plotErrors(errF.redo, nominalQ = TRUE)
 ```
 
 ## Dereplication
 ```{r}
-derepFs <- derepFastq(filtFs, verbose = TRUE)
-derepRs <- derepFastq(filtRs, verbose = TRUE)
-names(derepFs) <- sample.names
-names(derepRs) <- sample.names
+derepFs.redo <- derepFastq(filtFs.redo, verbose = TRUE)
+derepRs.redo <- derepFastq(filtRs.redo, verbose = TRUE)
+names(derepFs.redo) <- sample.names.redo
+names(derepRs.redo) <- sample.names.redo
 ```
 
 ## Sample Inference
 ```{r}
-dadaFs <- dada(derepFs, err=errF, multithread = TRUE)
-dadaRs <- dada(derepRs, err=errR, multithread = TRUE)
+dadaFs.redo <- dada(derepFs.redo, err=errF.redo, multithread = TRUE)
+dadaRs.redo <- dada(derepRs.redo, err=errR.redo, multithread = TRUE)
 ```
 
 ```{r}
-dadaFs[[2]]
+dadaFs.redo[[1]]
 ```
 
 ## Merge Paired Reads
 ```{r}
-mergers <- mergePairs(dadaFs, derepFs, dadaRs, derepRs, verbose = TRUE)
+mergers.redo <- mergePairs(dadaFs.redo, derepFs.redo, dadaRs.redo, derepRs.redo, verbose = TRUE)
 ```
 
 ```{r}
-head(mergers[[2]])
+head(mergers.redo[[1]])
 ```
 
 ## Further Processing
 Construct sequence table
 ```{r}
-seqtab <- makeSequenceTable(mergers)
-dim(seqtab)
+seqtab.redo <- makeSequenceTable(mergers.redo)
+dim(seqtab.redo)
 ```
 
 ```{r}
-table(nchar(getSequences(seqtab)))
+table(nchar(getSequences(seqtab.redo)))
 ```
 
 ```{r}
-seqtab2 <- seqtab[, nchar(colnames(seqtab)) %in% seq(417,449)]
+seqtab2.redo <- seqtab.redo[, nchar(colnames(seqtab.redo)) %in% seq(417,449)]
 ```
 
 Remove chimeras
 ```{r}
-seqtab.nochim <- removeBimeraDenovo(seqtab2, method = "consensus", multithread = TRUE, verbose = TRUE)
-dim(seqtab.nochim)
+seqtab.nochim.redo <- removeBimeraDenovo(seqtab2.redo, method = "consensus", multithread = TRUE, verbose = TRUE)
+dim(seqtab.nochim.redo)
 ```
 
 ```{r}
-sum(seqtab.nochim)/sum(seqtab2)
+sum(seqtab.nochim.redo)/sum(seqtab2.redo)
 ```
 
 Track reads through the pipeline
 ```{r}
 getN <- function(x) sum(getUniques(x))
-filt.out %>%
+filt.out.redo %>%
   as_tibble(rownames = "filename") %>%
-  mutate(sample = str_replace(filename, forward_fastq_suffix, "")) %>%
+  mutate(sample = str_replace(filename, forward_fastq_suffix.redo, "")) %>%
   select(sample, input = reads.in, filtered = reads.out) ->
-  track
+  track.redo
 
-sapply(dadaFs, getN) %>%
+sapply(dadaFs.redo, getN) %>%
   enframe(name = "sample", value = "denoised") ->
-  denoised
-track %<>% full_join(denoised, by = c("sample"))
+  denoised.redo
+track.redo %<>% full_join(denoised.redo, by = c("sample"))
 
-sapply(mergers, getN) %>%
+sapply(mergers.redo, getN) %>%
   enframe(name = "sample", value = "merged") ->
-  merged
-track %<>% full_join(merged, by = c("sample"))
+  merged.redo
+track.redo %<>% full_join(merged.redo, by = c("sample"))
 
-rowSums(seqtab2) %>%
+rowSums(seqtab2.redo) %>%
   enframe(name = "sample", value = "tabled") ->
-  tabled
-track %<>% full_join(tabled, by = c("sample"))
+  tabled.redo
+track.redo %<>% full_join(tabled.redo, by = c("sample"))
 
-rowSums(seqtab.nochim) %>%
+rowSums(seqtab.nochim.redo) %>%
   enframe(name = "sample", value = "nonchim") ->
-  nonchim
-track %<>% full_join(nonchim, by = c("sample"))
+  nonchim.redo
+track.redo %<>% full_join(nonchim.redo, by = c("sample"))
 
-track
+track.redo
 ```
 
 ```{r}
-track %>%
+track.redo %>%
   gather(key = "stage", value = "counts", -c("sample")) %>%
   replace_na(list(counts = 0)) %>%
   mutate(stage = factor(stage, levels = c('input', 'filtered', 'denoised', 'merged', 'tabled', 'nonchim'))) %>%
-  ggplot(mapping = aes(x = stage, y = counts, by = sample, group = sample)) + geom_line(alpha = 0.05) + theme_classic()
+  ggplot(mapping = aes(x = stage, y = counts, by = sample, group = sample)) + geom_line(alpha = 0.5) + theme_classic()
 ```
 
 ## Assign Taxonomy
 ```{r}
-taxa <- assignTaxonomy(seqtab.nochim, silva.ref, multithread = TRUE)
-taxa.print <- taxa
-rownames(taxa.print) <- NULL
-head(taxa.print)
+taxa.redo <- assignTaxonomy(seqtab.nochim.redo, silva.ref, multithread = TRUE)
+taxa.print.redo <- taxa.redo
+rownames(taxa.print.redo) <- NULL
+head(taxa.print.redo)
 ```
 
 ## Make Phyloseq Object
 Load metadata
 ```{r}
-metadata.df = read_tsv(redo.map.file)
+metadata.df.redo = read_tsv(redo.map.file) %>%
+  column_to_rownames("SampleID") %>%
+  as.data.frame()
 
-metadata.df
+metadata.df.redo
 ```
 
 Construct phyloseq object
 ```{r}
-otus = otu_table(seqtab.nochim, taxa_are_rows = FALSE)
-sd = sample_data(metadata.df)
-redo.ps <- phyloseq(otus, sd, tax_table(taxa))
+otus.redo = otu_table(seqtab.nochim.redo, taxa_are_rows = FALSE)
+sd.redo = sample_data(metadata.df.redo)
+redo.ps <- phyloseq(otus.redo, sd.redo, tax_table(taxa.redo))
 
 redo.ps
 ```
@@ -458,20 +460,45 @@ print(loaded.redo.ps)
 ```
 
 # Merge Phyloseq Objects
-```{r}
-#Load initial object
-loaded.initial.ps = read_rds(ps.rds)
 
-print(loaded.initial.ps)
+Remove bad samples from initial phyloseq object
+```{r}
+good.initial.ps <- loaded.ps %>%
+  subset_samples(!SampleName %in% 
+                   c("H3", "H4", "H15", "H16", "H25", "H27",
+                     "1","12", "13","2086-Day7","PBS-Day14", 
+                     "C1M1_ileum_lumen", "C1M1_ileum_tissue", "C2M2_ileum_lumen", "C2M2_ileum_tissue",
+                     "C5M1_ileum_lumen", "C5M2_ileum_tissue", "C6M1_colon_lumen", "C6M1_ileum_lumen",
+                     "C6M1_ileum_tissue"))
 ```
 
+Remove bad samples from redone phyloseq object
+```{r}
+good.redone.ps <- loaded.redo.ps %>%
+  subset_samples(!SampleName %in%
+                   c("H16", "H25", "2086-Day7"))
+```
+
+
+Merge phyloseq objects
 ```{r}
 #Merge phyloseq objects
-merged.ps <- merge_phyloseq(loaded.initial.ps, loaded.redo.ps)
+merged.ps <- merge_phyloseq(good.initial.ps, good.redone.ps)
+merged.ps
+```
 
+
+```{r}
 #Save as new RDS
 write_rds(merged.ps, merged.ps.rds)
 ```
+
+Confirm that the merged RDS is usable
+```{r}
+loaded.merged.ps = read_rds(merged.ps.rds)
+print(loaded.merged.ps)
+```
+
 
 # Session Info
 ```{r}
