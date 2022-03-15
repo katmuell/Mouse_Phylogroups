@@ -16,7 +16,7 @@ library(microbiomeMarker)
 
 #Define Paths
 ```{r}
-rds <- "/work/kdm65/2021-Dec.rds"
+rds <- "/work/kdm65/2021-Dec_merged.rds"
 ```
 
 Load and check phyloseq object
@@ -32,8 +32,7 @@ sample_variables(all_mice.ps)
 Subset for just Dustin's mice and remove bad samples
 ```{r}
 just.dustin.ps <- all_mice.ps %>%
-  subset_samples(Owner == "Dustin") %>%
-  subset_samples(!SampleName %in% c("2086-Day7","PBS-Day14"))
+  subset_samples(Owner == "Dustin")
 just.dustin.ps
 ```
 
@@ -228,6 +227,23 @@ even.nmds_bs <- ordinate(even.ps, "NMDS", "bray")
 ```{r}
 plot_ordination(even.ps, even.nmds_bs, color = "Day", shape = "Group") +
   geom_point(size = 5)
+```
+
+#SFB
+```{r}
+clostridiaceae.ps <- rel.ps %>%
+  subset_taxa(Family == "Clostridiaceae")
+print(clostridiaceae.ps)
+```
+
+```{r}
+clostridiaceae <- clostridiaceae.ps %>%
+  otu_table() %>%
+  as.data.frame()
+```
+
+```{r}
+write.csv(clostridiaceae, "clostridiaceae_asvs.txt", row.names = FALSE)
 ```
 
 
