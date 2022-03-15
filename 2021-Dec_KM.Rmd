@@ -19,7 +19,7 @@ library(cowplot)
 
 #Define Paths
 ```{r}
-rds <- "/work/kdm65/2021-Dec.rds"
+rds <- "/work/kdm65/2021-Dec_merged.rds"
 ```
 
 Load and check phyloseq object
@@ -35,8 +35,7 @@ sample_variables(all_mice.ps)
 Subset for just Katherine's mice and remove bad samples
 ```{r}
 just.katherine.ps <- all_mice.ps %>%
-  subset_samples(Owner == "Katherine") %>%
-  subset_samples(!SampleName %in% c("C1M1_ileum_lumen", "C1M1_ileum_tissue", "C2M2_ileum_lumen", "C2M2_ileum_tissue", "C5M1_ileum_lumen", "C5M2_ileum_tissue", "C6M1_colon_lumen", "C6M1_ileum_lumen", "C6M1_ileum_tissue"))
+  subset_samples(Owner == "Katherine")
 just.katherine.ps
 ```
 
